@@ -1,0 +1,110 @@
+{
+  "entities": {
+    "PatientProfile": {
+      "title": "PatientProfile",
+      "description": "Metabolic digital twin profile, CGM sensor telemetry, and simulator parameters for an AURELIX AI user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the patient." },
+        "patientName": { "type": "string", "description": "Display name of the patient." },
+        "age": { "type": "integer", "description": "Patient age in years." },
+        "diagnosisTrack": { "type": "string", "enum": ["EARLY_T2D_REVERSAL", "T1_INSULIN_ASSISTED"], "description": "Active diabetes management track." },
+        "language": { "type": "string", "enum": ["en", "ms", "zh"], "description": "Preferred UI and AI response language." },
+        "sensorDaysLeft": { "type": "integer", "description": "Remaining CGM sensor wear days." },
+        "sensorBattery": { "type": "integer", "description": "CGM transmitter battery percentage." },
+        "targetLowMgDl": { "type": "integer", "description": "Lower glucose target bound in mg/dL." },
+        "targetHighMgDl": { "type": "integer", "description": "Upper glucose target bound in mg/dL." },
+        "sleepHours": { "type": "number", "description": "Previous night sleep duration in hours." },
+        "walkMinutes": { "type": "integer", "description": "Post-meal walking duration in minutes." },
+        "simMealCarbs": { "type": "integer", "description": "Simulated meal carbohydrate load in grams." },
+        "simInsulinUnits": { "type": "number", "description": "Simulated insulin or medication dose." },
+        "neuroScore": { "type": "integer", "description": "Neuro-metabolic stability score (0-100)." },
+        "renalEgfr": { "type": "integer", "description": "Estimated glomerular filtration rate (eGFR)." },
+        "renalUacr": { "type": "number", "description": "Urine albumin-to-creatinine ratio (uACR)." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp of creation (FieldValue.serverTimestamp())." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp of last update (FieldValue.serverTimestamp())." }
+      },
+      "required": ["userId", "patientName", "age", "diagnosisTrack", "language", "sensorDaysLeft", "sensorBattery", "targetLowMgDl", "targetHighMgDl", "sleepHours", "walkMinutes", "simMealCarbs", "simInsulinUnits", "neuroScore", "renalEgfr", "renalUacr", "createdAt", "updatedAt"]
+    },
+    "MetabolicLog": {
+      "title": "MetabolicLog",
+      "description": "Timeline log item for meals, insulin doses, high-glucose alerts, and predictive AI alerts.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the patient." },
+        "entryType": { "type": "string", "enum": ["MEAL", "INSULIN", "ALERT", "PREDICTION"], "description": "Log entry category." },
+        "title": { "type": "string", "description": "Short descriptive title of the event." },
+        "timeLabel": { "type": "string", "description": "Formatted clock time such as 08:50." },
+        "dateGroup": { "type": "string", "description": "Date bucket label such as Today or Yesterday." },
+        "glucoseMgDl": { "type": "integer", "description": "Glucose reading in mg/dL." },
+        "carbsGrams": { "type": "integer", "description": "Carbohydrates in grams." },
+        "proteinGrams": { "type": "integer", "description": "Protein in grams." },
+        "fatGrams": { "type": "integer", "description": "Fat in grams." },
+        "fiberGrams": { "type": "integer", "description": "Dietary fiber in grams." },
+        "glycemicLoad": { "type": "string", "description": "Glycemic load rating (Low, Medium, High)." },
+        "insulinUnits": { "type": "number", "description": "Insulin units administered." },
+        "shapImpactSummary": { "type": "string", "description": "SHAP cause-and-effect attribution note." },
+        "habitTip": { "type": "string", "description": "Actionable Malaysian lifestyle or meal swap tip." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp of creation (FieldValue.serverTimestamp())." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp of last update (FieldValue.serverTimestamp())." }
+      },
+      "required": ["userId", "entryType", "title", "timeLabel", "dateGroup", "glucoseMgDl", "carbsGrams", "proteinGrams", "fatGrams", "fiberGrams", "glycemicLoad", "insulinUnits", "shapImpactSummary", "createdAt", "updatedAt"]
+    },
+    "DoctorMessage": {
+      "title": "DoctorMessage",
+      "description": "KPJ Endocrinology tele-care message between patient and clinician.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the patient." },
+        "senderRole": { "type": "string", "enum": ["PATIENT", "DOCTOR"], "description": "Originating role of the message." },
+        "senderName": { "type": "string", "description": "Sender display name." },
+        "text": { "type": "string", "description": "Message body." },
+        "timeLabel": { "type": "string", "description": "Display timestamp." },
+        "attachedGraphSummary": { "type": "string", "description": "Optional attached live CGM summary." },
+        "attachedEstimateUnits": { "type": "number", "description": "Optional attached insulin estimate in units." },
+        "confirmedBadge": { "type": "string", "description": "Optional verified clinician confirmation badge." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp of creation (FieldValue.serverTimestamp())." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp of last update (FieldValue.serverTimestamp())." }
+      },
+      "required": ["userId", "senderRole", "senderName", "text", "timeLabel", "createdAt", "updatedAt"]
+    },
+    "OrganScreening": {
+      "title": "OrganScreening",
+      "description": "Neuro-metabolic and renal protection screening record.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the patient." },
+        "footTingling": { "type": "boolean", "description": "Reported peripheral neuropathy tingling." },
+        "hrvStressHigh": { "type": "boolean", "description": "Elevated autonomic HRV stress indicator." },
+        "postSpikeBrainFog": { "type": "boolean", "description": "Reported post-prandial cognitive fog." },
+        "neuroStabilityScore": { "type": "integer", "description": "Computed neuro-metabolic stability score." },
+        "systolicBp": { "type": "integer", "description": "Systolic blood pressure in mmHg." },
+        "diastolicBp": { "type": "integer", "description": "Diastolic blood pressure in mmHg." },
+        "hydrationGlasses": { "type": "integer", "description": "Daily hydration intake in glasses." },
+        "egfr": { "type": "integer", "description": "Estimated GFR value." },
+        "uacr": { "type": "number", "description": "Urine albumin-to-creatinine ratio." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp of creation (FieldValue.serverTimestamp())." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp of last update (FieldValue.serverTimestamp())." }
+      },
+      "required": ["userId", "footTingling", "hrvStressHigh", "postSpikeBrainFog", "neuroStabilityScore", "systolicBp", "diastolicBp", "hydrationGlasses", "egfr", "uacr", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/PatientProfile" },
+      "description": "Patient profile, active demo track, CGM telemetry, and live simulator settings."
+    },
+    "/users/{userId}/logs/{logId}": {
+      "schema": { "$ref": "#/entities/MetabolicLog" },
+      "description": "User-scoped metabolic timeline logs (meals, insulin, alerts, predictions)."
+    },
+    "/users/{userId}/doctorMessages/{messageId}": {
+      "schema": { "$ref": "#/entities/DoctorMessage" },
+      "description": "User-scoped KPJ endocrinologist tele-care conversation thread."
+    },
+    "/users/{userId}/screenings/{screeningId}": {
+      "schema": { "$ref": "#/entities/OrganScreening" },
+      "description": "User-scoped neuro-metabolic and renal screening assessments."
+    }
+  }
+}

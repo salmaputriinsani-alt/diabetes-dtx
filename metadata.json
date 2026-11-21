@@ -1,0 +1,6 @@
+{
+  "name": "AURELIX AI",
+  "description": "Clinic-guided Digital Therapeutic (DTx) and Metabolic Digital Twin for Early Type 2 Diabetes in Malaysia.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

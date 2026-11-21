@@ -1,0 +1,230 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: default deny everything
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Global Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Validation Blueprints ---
+    function isValidPatientProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.patientName is string && data.patientName.size() >= 1 && data.patientName.size() <= 80 &&
+             data.age is int && data.age >= 1 && data.age <= 120 &&
+             data.diagnosisTrack in ['EARLY_T2D_REVERSAL', 'T1_INSULIN_ASSISTED'] &&
+             data.language in ['en', 'ms', 'zh'] &&
+             data.sensorDaysLeft is int && data.sensorDaysLeft >= 0 && data.sensorDaysLeft <= 30 &&
+             data.sensorBattery is int && data.sensorBattery >= 0 && data.sensorBattery <= 100 &&
+             data.targetLowMgDl is int && data.targetLowMgDl >= 40 && data.targetLowMgDl <= 140 &&
+             data.targetHighMgDl is int && data.targetHighMgDl >= 120 && data.targetHighMgDl <= 300 &&
+             data.sleepHours is number && data.sleepHours >= 0.0 && data.sleepHours <= 24.0 &&
+             data.walkMinutes is int && data.walkMinutes >= 0 && data.walkMinutes <= 300 &&
+             data.simMealCarbs is int && data.simMealCarbs >= 0 && data.simMealCarbs <= 400 &&
+             data.simInsulinUnits is number && data.simInsulinUnits >= 0.0 && data.simInsulinUnits <= 100.0 &&
+             data.neuroScore is int && data.neuroScore >= 0 && data.neuroScore <= 100 &&
+             data.renalEgfr is int && data.renalEgfr >= 5 && data.renalEgfr <= 200 &&
+             data.renalUacr is number && data.renalUacr >= 0.0 && data.renalUacr <= 5000.0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidMetabolicLog(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.entryType in ['MEAL', 'INSULIN', 'ALERT', 'PREDICTION'] &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.timeLabel is string && data.timeLabel.size() >= 1 && data.timeLabel.size() <= 32 &&
+             data.dateGroup is string && data.dateGroup.size() >= 1 && data.dateGroup.size() <= 32 &&
+             data.glucoseMgDl is int && data.glucoseMgDl >= 20 && data.glucoseMgDl <= 600 &&
+             data.carbsGrams is int && data.carbsGrams >= 0 && data.carbsGrams <= 500 &&
+             data.proteinGrams is int && data.proteinGrams >= 0 && data.proteinGrams <= 300 &&
+             data.fatGrams is int && data.fatGrams >= 0 && data.fatGrams <= 300 &&
+             data.fiberGrams is int && data.fiberGrams >= 0 && data.fiberGrams <= 150 &&
+             data.glycemicLoad is string && data.glycemicLoad.size() <= 32 &&
+             data.insulinUnits is number && data.insulinUnits >= 0.0 && data.insulinUnits <= 100.0 &&
+             data.shapImpactSummary is string && data.shapImpactSummary.size() <= 240 &&
+             (!('habitTip' in data) || (data.habitTip is string && data.habitTip.size() <= 300)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidDoctorMessage(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.senderRole in ['PATIENT', 'DOCTOR'] &&
+             data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 80 &&
+             data.text is string && data.text.size() >= 1 && data.text.size() <= 1500 &&
+             data.timeLabel is string && data.timeLabel.size() >= 1 && data.timeLabel.size() <= 32 &&
+             (!('attachedGraphSummary' in data) || (data.attachedGraphSummary is string && data.attachedGraphSummary.size() <= 200)) &&
+             (!('attachedEstimateUnits' in data) || (data.attachedEstimateUnits is number && data.attachedEstimateUnits >= 0.0 && data.attachedEstimateUnits <= 100.0)) &&
+             (!('confirmedBadge' in data) || (data.confirmedBadge is string && data.confirmedBadge.size() <= 120)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidOrganScreening(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.footTingling is bool &&
+             data.hrvStressHigh is bool &&
+             data.postSpikeBrainFog is bool &&
+             data.neuroStabilityScore is int && data.neuroStabilityScore >= 0 && data.neuroStabilityScore <= 100 &&
+             data.systolicBp is int && data.systolicBp >= 60 && data.systolicBp <= 260 &&
+             data.diastolicBp is int && data.diastolicBp >= 30 && data.diastolicBp <= 160 &&
+             data.hydrationGlasses is int && data.hydrationGlasses >= 0 && data.hydrationGlasses <= 30 &&
+             data.egfr is int && data.egfr >= 5 && data.egfr <= 200 &&
+             data.uacr is number && data.uacr >= 0.0 && data.uacr <= 5000.0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // --- Collection Rules ---
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'patientName', 'age', 'diagnosisTrack', 'language',
+                         'sensorDaysLeft', 'sensorBattery', 'targetLowMgDl', 'targetHighMgDl',
+                         'sleepHours', 'walkMinutes', 'simMealCarbs', 'simInsulinUnits',
+                         'neuroScore', 'renalEgfr', 'renalUacr', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'patientName', 'age', 'diagnosisTrack', 'language',
+                         'sensorDaysLeft', 'sensorBattery', 'targetLowMgDl', 'targetHighMgDl',
+                         'sleepHours', 'walkMinutes', 'simMealCarbs', 'simInsulinUnits',
+                         'neuroScore', 'renalEgfr', 'renalUacr', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidPatientProfile(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidPatientProfile(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'patientName', 'age', 'diagnosisTrack', 'language',
+                         'sensorDaysLeft', 'sensorBattery', 'targetLowMgDl', 'targetHighMgDl',
+                         'sleepHours', 'walkMinutes', 'simMealCarbs', 'simInsulinUnits',
+                         'neuroScore', 'renalEgfr', 'renalUacr', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /logs/{logId} {
+        allow get: if isOwner(userId) && isValidId(logId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(logId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'entryType', 'title', 'timeLabel', 'dateGroup',
+                           'glucoseMgDl', 'carbsGrams', 'proteinGrams', 'fatGrams',
+                           'fiberGrams', 'glycemicLoad', 'insulinUnits', 'shapImpactSummary',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'entryType', 'title', 'timeLabel', 'dateGroup',
+                           'glucoseMgDl', 'carbsGrams', 'proteinGrams', 'fatGrams',
+                           'fiberGrams', 'glycemicLoad', 'insulinUnits', 'shapImpactSummary',
+                           'habitTip', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidMetabolicLog(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(logId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidMetabolicLog(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'title', 'glucoseMgDl', 'habitTip', 'shapImpactSummary', 'updatedAt'
+                         ]);
+
+        allow delete: if isOwner(userId) && isValidId(logId);
+      }
+
+      match /doctorMessages/{messageId} {
+        allow get: if isOwner(userId) && isValidId(messageId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(messageId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'senderRole', 'senderName', 'text', 'timeLabel',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'senderRole', 'senderName', 'text', 'timeLabel',
+                           'attachedGraphSummary', 'attachedEstimateUnits', 'confirmedBadge',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidDoctorMessage(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(messageId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidDoctorMessage(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'confirmedBadge', 'text', 'updatedAt'
+                         ]);
+
+        allow delete: if isOwner(userId) && isValidId(messageId);
+      }
+
+      match /screenings/{screeningId} {
+        allow get: if isOwner(userId) && isValidId(screeningId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(screeningId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'footTingling', 'hrvStressHigh', 'postSpikeBrainFog',
+                           'neuroStabilityScore', 'systolicBp', 'diastolicBp', 'hydrationGlasses',
+                           'egfr', 'uacr', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'footTingling', 'hrvStressHigh', 'postSpikeBrainFog',
+                           'neuroStabilityScore', 'systolicBp', 'diastolicBp', 'hydrationGlasses',
+                           'egfr', 'uacr', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidOrganScreening(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(screeningId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidOrganScreening(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'footTingling', 'hrvStressHigh', 'postSpikeBrainFog',
+                           'neuroStabilityScore', 'systolicBp', 'diastolicBp', 'hydrationGlasses',
+                           'egfr', 'uacr', 'updatedAt'
+                         ]);
+
+        allow delete: if isOwner(userId) && isValidId(screeningId);
+      }
+    }
+  }
+}
